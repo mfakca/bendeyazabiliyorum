@@ -1,0 +1,71 @@
+from flask import Flask, render_template,request
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+import tensorflow as tf
+import pickle
+import os
+import sys
+import re
+import string
+
+
+
+
+def predict(new_metin):
+
+    new_sayi = 40	
+    model = tf.keras.models.load_model("saved_model.h5")
+    with open('tokenizer.pickle', 'rb') as handle: 
+        tokenizer = pickle.load(handle)
+
+
+    max_sequence_len =143
+
+    for x in range(new_sayi):
+
+        token_list = tokenizer.texts_to_sequences([new_metin])[0]
+        token_list = pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
+        predicted = model.predict_classes(token_list, verbose=0)
+
+        output_word = ""
+        for word,index in tokenizer.word_index.items():
+            if index == predicted:
+                output_word = word
+                break
+
+        new_metin += " "+output_word
+
+    return new_metin
+    
+    
+    
+app = Flask(__name__)
+
+
+
+
+@app.route('/')
+def home():
+   return render_template('home.html')
+
+
+@app.route('/output', methods =["POST"]) 
+def output(): 
+	if request.method == "POST":		       
+		user_input = request.form.get("start-poem")
+		if user_input != "":
+
+			lower = str.maketrans("ABCÇDEFGĞHIİJKLMNOÖPRŞSTUÜVYZ", "abcçdefgğhıijklmnoöprşstuüvyz")
+			user_input = user_input.translate(lower)
+			user_input = predict(user_input.translate(str.maketrans('', '', string.punctuation)))
+			
+		else: user_input = "Lütfen bir önceki sayfaya gidip, bir cümle giriniz."
+		return render_template("output.html", output = user_input)
+   
+
+
+
+
+
+
+if __name__ == '__main__':
+   app.run(debug=True)

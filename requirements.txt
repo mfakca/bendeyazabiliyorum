@@ -1,0 +1,7 @@
+flask
+tensorflow
+pickle
+os
+sys
+re
+string
